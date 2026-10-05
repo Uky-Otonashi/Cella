@@ -61,6 +61,7 @@ input:focus, select:focus { border-color: var(--accent); }
 .titlebar-btns button:hover { background: var(--hover); color: var(--text); }
 #btn-close:hover { background: #d13438; color: #fff; }
 #btn-theme { width: 38px; font-size: 14px; }
+#btn-lang { width: 38px; font-size: 12px; }
 
 /* ============ 工具栏 ============ */
 #toolbar {

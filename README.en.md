@@ -19,7 +19,7 @@ The name comes from Latin *cella* ("small room") — the etymon of the spreadshe
 - **Search** (`Ctrl+F`) across sheet / whole file / selection
 - **Multi-file & multi-sheet** — tabs for open files, sheet tabs, per-sheet view state
 - **View write-back** — column order, hidden columns, freeze panes, AutoFilter, column widths, wrap and row order are written back into the original workbook (with a `.bak` backup first for `.xlsx`)
-- **Dark / light themes**, virtualized rendering for large sheets
+- **Dark / light themes**, **Chinese / English UI** with one-click switching (defaults to the system language; instant toggle from the title bar), virtualized rendering for large sheets
 - Native window resizing and dragging, DPI-friendly, centers on the current monitor
 
 ![filtering](assets/shot-filter.png)
@@ -57,6 +57,7 @@ Grab `Cella.exe` from the [Releases](https://github.com/Uky-Otonashi/Cella/relea
 │       ├── index.html # App shell: title bar, toolbar, grid, welcome page
 │       ├── app.js     # Virtual-scrolling grid, freeze panes, selection,
 │       │              # filtering, sorting, search, multi-file/sheet tabs
+│       ├── lang.js    # UI text i18n (zh/en dictionaries + switching)
 │       └── app.css    # Themes (dark/light) and all styling
 ├── res/
 │   └── app.ico        # Application icon
@@ -82,7 +83,7 @@ python src/main.py
 # Browser dev mode (mock data server at http://127.0.0.1:8765)
 python src/main.py --dev
 
-# Build the single-file exe (output in src/dist/)
+# Build the single-file exe (run from the repo root; output in dist/)
 python -m PyInstaller src/Cella.spec --noconfirm
 ```
 

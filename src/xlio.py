@@ -374,7 +374,8 @@ def apply_view_xlsx(path, payload):
         ws.auto_filter.ref = None
     colors_used = any((f.get('colors') or []) for f in (payload.get('filters') or []))
     if colors_used:
-        notes.append('多色筛选超出 Excel 单色 colorFilter 能力, 仅写入首个颜色或跳过')
+        # notes 是稳定码, 由前端 lang.js 字典翻译展示(未知码原样透传)
+        notes.append('note:multicolor_limit')
     wb.save(path)
     return {'ok': True, 'savedTo': os.path.abspath(path), 'notes': notes}
 
@@ -413,7 +414,7 @@ def apply_view_xls(path, payload):
     saved = os.path.splitext(path)[0] + '.xlsx'
     wb.save(saved)
     return {'ok': True, 'savedTo': os.path.abspath(saved),
-            'notes': ['原 .xls 文件保留未动, 视图已写入同名 .xlsx 新文件']}
+            'notes': ['note:xls_saved_copy']}
 
 
 def save_back(path, payload):

@@ -25,9 +25,9 @@ function toNum(v) {
   return /^-?\d*\.?\d+(e[-+]?\d+)?$/i.test(s) ? parseFloat(s) : NaN;
 }
 function toast(msg, kind) {
-  const t = el('div', 'toast' + (kind ? ' ' + kind : ''), msg);
-  $('#toasts').appendChild(t);
-  setTimeout(() => t.remove(), 3600);
+  const nd = el('div', 'toast' + (kind ? ' ' + kind : ''), msg);
+  $('#toasts').appendChild(nd);
+  setTimeout(() => nd.remove(), 3600);
 }
 
 /* ================= bridge ================= */
@@ -518,10 +518,10 @@ function cellFromPointEl(target) {
 }
 function topVisibleBodyRow(body, g) {
   // 视口顶部露出的首个正文行(部分露出也算): 上方向自动滚时目标行随滚动上移
-  let t = 0;
+  let acc = 0;
   for (let i = 0; i < body.length; i++) {
-    t += rowH[body[i]];
-    if (g.scrollTop < t) return body[i];
+    acc += rowH[body[i]];
+    if (g.scrollTop < acc) return body[i];
   }
   return body[body.length - 1];
 }
@@ -543,9 +543,9 @@ function marqueeHitXY(x, y) {
   const vy = y - gr.top;
   let ri;
   if (vy < fH && nF > 0) {
-    let t = 0;
+    let acc = 0;
     ri = seq[nF - 1];
-    for (let k = 0; k < nF; k++) { t += rowH[seq[k]]; if (vy < t) { ri = seq[k]; break; } }
+    for (let k = 0; k < nF; k++) { acc += rowH[seq[k]]; if (vy < acc) { ri = seq[k]; break; } }
     if (isHeadRow(ri)) {
       // 落在表头: 表头不参与选区, 钳到表头下首个可见行
       // (有冻结数据行=seq[1] 恒可见; 否则=视口顶部露出的首个正文行, 随上滚上移)
@@ -553,8 +553,8 @@ function marqueeHitXY(x, y) {
     }
   } else {
     const yBody = vy - fH + g.scrollTop;
-    let t = 0, found = -1;
-    for (let i = 0; i < body.length; i++) { t += rowH[body[i]]; if (yBody < t) { found = i; break; } }
+    let acc = 0, found = -1;
+    for (let i = 0; i < body.length; i++) { acc += rowH[body[i]]; if (yBody < acc) { found = i; break; } }
     ri = found >= 0 ? body[found] : body[body.length - 1];
   }
   if (ri === undefined || isHeadRow(ri)) return null;
@@ -572,15 +572,15 @@ function marqueeHitXY(x, y) {
       // 行号槽: 钳到当前最左可见列(有冻结列=首列恒可见; 否则随左滚左移)
       ci = vfc > 0 ? cols[0] : leftVisibleBodyCol(cols, vfc, g);
     } else {
-      let t = ROWNUM_W;
+      let acc = ROWNUM_W;
       ci = cols[vfc - 1];
-      for (let j = 0; j < vfc; j++) { t += colWidth(cols[j]); if (cx < t) { ci = cols[j]; break; } }
+      for (let j = 0; j < vfc; j++) { acc += colWidth(cols[j]); if (cx < acc) { ci = cols[j]; break; } }
     }
   } else {
     const xr = cx + g.scrollLeft;
-    let t = bx;
+    let acc = bx;
     ci = cols[cols.length - 1];
-    for (let j = vfc; j < cols.length; j++) { t += colWidth(cols[j]); if (xr < t) { ci = cols[j]; break; } }
+    for (let j = vfc; j < cols.length; j++) { acc += colWidth(cols[j]); if (xr < acc) { ci = cols[j]; break; } }
   }
   return { ri, ci };
 }
@@ -588,10 +588,10 @@ function leftVisibleBodyCol(cols, vfc, g) {
   // 视口左侧露出的首个正文列(部分露出也算): 左方向自动滚时目标列随滚动左移
   let bx = ROWNUM_W;
   for (let j = 0; j < vfc; j++) bx += colWidth(cols[j]);
-  let t = bx;
+  let acc = bx;
   for (let j = vfc; j < cols.length; j++) {
-    t += colWidth(cols[j]);
-    if (g.scrollLeft < t) return cols[j];
+    acc += colWidth(cols[j]);
+    if (g.scrollLeft < acc) return cols[j];
   }
   return cols[cols.length - 1];
 }
@@ -806,7 +806,7 @@ function applySorts(list) {
   if (!v || !sh) return;
   if (v.selRanges && v.selRanges.length && isSingleColSel(v) === null) {
     // 跨列多选时禁用排序: 框选矩形基于所见显示位置, 排序改变行序会使所见选区与数据选区错位
-    toast('多选状态下已禁用排序: 请先取消选区(点击空白处或 Esc)', 'warn');
+    toast(t('sort_disabled_multisel'), 'warn');
     return;
   }
   if (!v.sorts.length && list.length && v.rowOrderPreSort === null) {
@@ -821,8 +821,8 @@ function applySorts(list) {
     v.rowOrderPreSort = null;
     if (v.titleRow != null) {
       // 恢复的手动行序里把标题行放回最前(保持置顶语义)
-      const t = v.titleRow;
-      v.rowOrder = [t].concat((v.rowOrder || Array.from({ length: sh.rows.length }, (_, i) => i)).filter((x) => x !== t));
+      const tr = v.titleRow;
+      v.rowOrder = [tr].concat((v.rowOrder || Array.from({ length: sh.rows.length }, (_, i) => i)).filter((x) => x !== tr));
     }
   } else {
     const seq = rowSeq().slice();
@@ -854,25 +854,25 @@ function sortTargetCol() {
 }
 function quickSort(dir) {
   const ci = sortTargetCol();
-  if (ci === null || ci === undefined) { toast('请先选中单元格或列: 升/降序作用于该列', 'warn'); return; }
+  if (ci === null || ci === undefined) { toast(t('sort_need_target'), 'warn'); return; }
   applySorts([{ col: ci, dir }]);
 }
 
 function openSortModal() {
-  if (!FILES.length) { toast('先打开一个文件再排序', 'warn'); return; }
+  if (!FILES.length) { toast(t('sort_need_file'), 'warn'); return; }
   const v = view();
   if (v.selRanges && v.selRanges.length && isSingleColSel(v) === null) {
-    toast('多选状态下已禁用排序: 请先取消选区(点击空白处或 Esc)', 'warn');
+    toast(t('sort_disabled_multisel'), 'warn');
     return;
   }
   const cols = visibleCols();
-  if (!cols.length) { toast('没有可排序的列', 'warn'); return; }
+  if (!cols.length) { toast(t('sort_no_cols'), 'warn'); return; }
   const mask = $('#modal-mask'), m = $('#modal');
   m.textContent = '';
   m.classList.remove('cell-modal', 'search-modal');
   m.classList.add('fm-modal');
-  m.appendChild(el('h3', '', '多条件排序'));
-  m.appendChild(el('div', 'fm-sub', '从上到下优先级递减: 先按第 1 条排序, 值相同的再按第 2 条, 依此类推。'));
+  m.appendChild(el('h3', '', t('sort_modal_title')));
+  m.appendChild(el('div', 'fm-sub', t('sort_modal_sub')));
   const list = (v.sorts || []).map((s) => ({ col: s.col, dir: s.dir }));
   if (!list.length) list.push({ col: cols[0], dir: 'asc' });
   const listBox = el('div', 'fm-list');
@@ -892,31 +892,31 @@ function openSortModal() {
       colSel.onchange = () => { list[i].col = Number(colSel.value); };
       const dirSel = document.createElement('select');
       dirSel.className = 'fm-dir';
-      [['asc', '↑ 升序'], ['desc', '↓ 降序']].forEach(([val, label]) => {
+      [['asc', 'sort_dir_asc'], ['desc', 'sort_dir_desc']].forEach(([val, key]) => {
         const o = document.createElement('option');
-        o.value = val; o.textContent = label;
+        o.value = val; o.textContent = t(key);
         if (r.dir === val) o.selected = true;
         dirSel.appendChild(o);
       });
       dirSel.onchange = () => { list[i].dir = dirSel.value; };
       const del = el('button', 'del', '✕');
-      del.title = '删除此排序级';
+      del.title = t('sort_del_level');
       del.onclick = () => { list.splice(i, 1); renderRows(); };
       row.append(colSel, dirSel, del);
       listBox.appendChild(row);
     });
-    const add = el('button', 'fm-add', '＋ 添加排序级');
+    const add = el('button', 'fm-add', t('sort_add_level'));
     add.onclick = () => { list.push({ col: cols[0], dir: 'asc' }); renderRows(); };
     listBox.appendChild(add);
   }
   renderRows();
-  m.appendChild(el('div', 'fm-note', '排序只改变显示顺序(整行联动); 冻结区行不参与。清除全部排序可恢复排序前的行序。'));
+  m.appendChild(el('div', 'fm-note', t('sort_modal_note')));
   const btns = el('div', 'm-btns');
-  const clearBtn = el('button', 'tbtn m-clear', '清除全部排序');
-  clearBtn.onclick = () => { mask.classList.remove('open'); applySorts([]); toast('已清除排序, 恢复排序前行序', 'ok'); };
-  const cancel = el('button', 'tbtn', '取消');
+  const clearBtn = el('button', 'tbtn m-clear', t('sort_clear_all'));
+  clearBtn.onclick = () => { mask.classList.remove('open'); applySorts([]); toast(t('sort_cleared_all'), 'ok'); };
+  const cancel = el('button', 'tbtn', t('btn_cancel'));
   cancel.onclick = () => mask.classList.remove('open');
-  const ok = el('button', 'tbtn primary', '应用排序');
+  const ok = el('button', 'tbtn primary', t('sort_apply'));
   ok.onclick = () => {
     mask.classList.remove('open');
     applySorts(list.filter((r) => cols.includes(r.col)));
@@ -973,7 +973,7 @@ function makeCell(di, ci, ri, cellData, lefts, cols) {
     // 表头: 标签 + 图标 + 拖宽手柄
     c.classList.add('hcell');
     if (v.colSel && v.colSel.has(ci)) c.classList.add('colsel');
-    const label = el('span', 'ch-label', val === '' ? (v.hasHeader ? '(空列头)' : '') : String(val));
+    const label = el('span', 'ch-label', val === '' ? (v.hasHeader ? t('empty_head') : '') : String(val));
     c.appendChild(label);
     const icons = el('span', 'ch-icons');
     if (v.filters[ci] && ((v.filters[ci].conds || []).length || (v.filters[ci].colors || []).length || (v.filters[ci].values && v.filters[ci].values.include))) {
@@ -1024,7 +1024,7 @@ function makeRow(ri, cols, lefts) {
   row.style.height = rowH[ri] + 'px';
   // 行号(手动标题行不计号, 显示 ▤)
   const rn = el('div', 'cell rownum', rowNumLabel(ri));
-  if (v.titleRow != null && ri === v.titleRow) rn.title = '标题行(右键行号可取消)';
+  if (v.titleRow != null && ri === v.titleRow) rn.title = t('title_row_tip');
   rn.style.width = ROWNUM_W + 'px';
   const rzh = el('div', 'row-resizer');
   rzh.dataset.ri = ri;
@@ -1069,7 +1069,7 @@ function addHideSeams(rowEl) {
     const s = el('div', 'hide-seam');
     s.style.left = (g.x + 0.5) + 'px';
     s.dataset.cols = g.cols.join(',');
-    s.title = '按住向右拖动拉出隐藏列: ' + g.cols.map(colName).join('、');
+    s.title = t('hide_seam_tip', { names: g.cols.map(colName).join(t('list_sep')) });
     rowEl.appendChild(s);
   }
 }
@@ -1229,16 +1229,20 @@ function renderAll() {
   updateStatus();
   updateInputs();
 }
-const OP_LABELS = { contains: '包含', not_contains: '不包含', equals: '等于', not_equals: '不等于',
-  starts: '开头', ends: '结尾', empty: '为空', not_empty: '非空',
+// 标签卡摘要的操作符文案: chip_ 前缀值是 lang.js 字典键(随语言切换), 其余为语言中立符号
+const OP_LABELS = { contains: 'chip_contains', not_contains: 'chip_not_contains', equals: 'chip_equals', not_equals: 'chip_not_equals',
+  starts: 'chip_starts', ends: 'chip_ends', empty: 'chip_empty', not_empty: 'chip_not_empty',
   gt: '>', lt: '<', gte: '≥', lte: '≤', eq: '=', ne: '≠' };
 
 function filterSummary(f) {
   const parts = [];
-  if (f.values && f.values.include) parts.push('值∈' + f.values.include.length + '类');
-  (f.conds || []).forEach((c) => parts.push((OP_LABELS[c.op] || c.op) + ((c.op === 'empty' || c.op === 'not_empty') ? '' : c.val)));
-  if ((f.colors || []).length) parts.push(f.colors.length + '色');
-  return parts.join(' 且 ');
+  if (f.values && f.values.include) parts.push(t('chip_values', { n: f.values.include.length }));
+  (f.conds || []).forEach((c) => {
+    const lab = OP_LABELS[c.op];
+    parts.push((lab ? (lab.startsWith('chip_') ? t(lab) : lab) : c.op) + ((c.op === 'empty' || c.op === 'not_empty') ? '' : c.val));
+  });
+  if ((f.colors || []).length) parts.push(t('chip_colors', { n: f.colors.length }));
+  return parts.join(t('chip_and'));
 }
 
 function renderChips() {
@@ -1253,13 +1257,13 @@ function renderChips() {
     const f = v.filters[ci];
     if (!(f.conds || []).length && !(f.colors || []).length && !(f.values && f.values.include)) continue;
     has = true;
-    const name = colName(ci).slice(0, 14) || ('列' + (ci + 1));
+    const name = colName(ci).slice(0, 14) || t('col_fallback_name', { n: ci + 1 });
     const chip = el('div', 'fchip');
-    chip.title = '点击编辑此筛选';
+    chip.title = t('chip_edit_tip');
     chip.appendChild(el('span', 'fc-name', name));
     chip.appendChild(el('span', 'fc-desc', filterSummary(f)));
     const x = el('span', 'fc-close', '✕');
-    x.title = '清除该列筛选';
+    x.title = t('chip_clear_tip');
     x.onclick = (e) => { e.stopPropagation(); delete v.filters[ci]; renderAll(); };
     chip.onclick = () => openFilterPanel(ci);
     chip.appendChild(x);
@@ -1305,12 +1309,12 @@ function openCellModal(ri, ci) {
   const mask = $('#modal-mask'), m = $('#modal');
   m.textContent = '';
   m.classList.add('cell-modal');
-  m.appendChild(el('h3', '', '第 ' + (ri + 1) + ' 行 · ' + colName(ci) + ' 列 · 完整内容'));
+  m.appendChild(el('h3', '', t('cell_modal_title', { r: ri + 1, c: colName(ci) })));
   const body = el('div', 'cell-full');
-  body.textContent = txt || '(空)';
+  body.textContent = txt || t('cell_empty');
   m.appendChild(body);
   const btns = el('div', 'm-btns');
-  const ok = el('button', 'tbtn primary', '关闭');
+  const ok = el('button', 'tbtn primary', t('btn_close'));
   ok.onclick = () => mask.classList.remove('open');
   btns.appendChild(ok);
   m.appendChild(btns);
@@ -1319,24 +1323,24 @@ function openCellModal(ri, ci) {
 
 /* ================= Ctrl+F 搜索 ================= */
 let searchCtx = null;   // {results:[{fi,si,ri,ci,text}], idx}
-const SCOPES = [['sel', '选中区域(当前工作表)'], ['sheet', '当前工作表'], ['file', '当前文件(全部工作表)'], ['all', '全部打开的文件'], ['col', '选中列(当前工作表)']];
+const SCOPES = [['sel', 'search_scope_sel'], ['sheet', 'search_scope_sheet'], ['file', 'search_scope_file'], ['all', 'search_scope_all'], ['col', 'search_scope_col']];
 
 function openSearch() {
-  if (!FILES.length) { toast('先打开一个文件再搜索', 'warn'); return; }
+  if (!FILES.length) { toast(t('search_need_file'), 'warn'); return; }
   const mask = $('#modal-mask'), m = $('#modal');
   m.textContent = '';
   m.classList.remove('cell-modal');
   m.classList.add('search-modal');
-  m.appendChild(el('h3', '', '查找'));
+  m.appendChild(el('h3', '', t('search_title')));
   const row1 = el('div', 'sr-row');
   const inp = document.createElement('input');
   inp.className = 'sr-input';
-  inp.placeholder = '查找内容 (不区分大小写, 按内容包含匹配)';
+  inp.placeholder = t('search_ph');
   if (searchCtx) inp.value = searchCtx.q || '';
   const sel = document.createElement('select');
-  SCOPES.forEach(([v, label]) => {
+  SCOPES.forEach(([v, key]) => {
     const o = document.createElement('option');
-    o.value = v; o.textContent = label;
+    o.value = v; o.textContent = t(key);
     sel.appendChild(o);
   });
   if (searchCtx) sel.value = searchCtx.scope || 'sheet';
@@ -1346,43 +1350,43 @@ function openSearch() {
   sel.querySelector('option[value="sel"]').disabled = !hasSelRange;
   if (!hasSelRange && sel.value === 'sel') sel.value = 'sheet';
   if (hasSelRange && !searchCtx) sel.value = 'sel';   // 有选区时默认只搜选区(可切回全表)
-  const next = el('button', 'tbtn primary', '查找下一个');
-  const all = el('button', 'tbtn', '查找全部');
+  const next = el('button', 'tbtn primary', t('search_find_next'));
+  const all = el('button', 'tbtn', t('search_find_all'));
   row1.append(inp, sel, next, all);
   m.appendChild(row1);
   // 每次打开都显示默认提示(不残留上次搜索的计数; searchCtx 保留, 继续查找仍可循环)
-  const status = el('div', 'sr-status', '输入内容后回车查找');
+  const status = el('div', 'sr-status', t('search_initial'));
   m.appendChild(status);
   const list = el('div', 'sr-list');
   m.appendChild(list);
   const btns = el('div', 'm-btns');
-  const close = el('button', 'tbtn', '关闭');
+  const close = el('button', 'tbtn', t('btn_close'));
   close.onclick = () => mask.classList.remove('open');
   btns.appendChild(close);
   m.appendChild(btns);
 
   const doNext = () => {
     const q = inp.value.trim();
-    if (!q) { status.textContent = '请输入查找内容'; return; }
+    if (!q) { status.textContent = t('search_empty_q'); return; }
     if (!searchCtx || searchCtx.q !== q || searchCtx.scope !== sel.value) {
       searchCtx = { q, scope: sel.value, results: runSearch(q, sel.value), idx: -1 };
     }
-    if (!searchCtx.results.length) { status.textContent = '没有匹配结果'; return; }
+    if (!searchCtx.results.length) { status.textContent = t('search_no_match'); return; }
     searchCtx.idx = (searchCtx.idx + 1) % searchCtx.results.length;
-    status.textContent = `第 ${searchCtx.idx + 1} / 共 ${searchCtx.results.length} 条`;
+    status.textContent = t('search_pos', { i: searchCtx.idx + 1, n: searchCtx.results.length });
     jumpToMatch(searchCtx.results[searchCtx.idx]);
   };
   const doAll = () => {
     const q = inp.value.trim();
-    if (!q) { status.textContent = '请输入查找内容'; return; }
+    if (!q) { status.textContent = t('search_empty_q'); return; }
     searchCtx = { q, scope: sel.value, results: runSearch(q, sel.value), idx: -1 };
     list.textContent = '';
-    if (!searchCtx.results.length) { status.textContent = '没有匹配结果'; return; }
-    status.textContent = `共 ${searchCtx.results.length} 条匹配 (显示前 ${Math.min(500, searchCtx.results.length)} 条)`;
+    if (!searchCtx.results.length) { status.textContent = t('search_no_match'); return; }
+    status.textContent = t('search_all_count', { n: searchCtx.results.length, m: Math.min(500, searchCtx.results.length) });
     searchCtx.results.slice(0, 500).forEach((r) => {
       const it = el('div', 'sr-item');
       const loc = el('span', 'sr-loc',
-        `${FILES[r.fi].data.fileName} · ${FILES[r.fi].data.sheets[r.si].name} · 行${r.ri + 1} · ${colNameOf(r)}列`);
+        t('search_loc', { file: FILES[r.fi].data.fileName, sheet: FILES[r.fi].data.sheets[r.si].name, r: r.ri + 1, c: colNameOf(r) }));
       const txt = el('span', 'sr-txt', r.text.slice(0, 90));
       txt.title = r.text;
       it.append(loc, txt);
@@ -1458,9 +1462,9 @@ function selectAndCenter(ri, ci) {
   ensureHeights();
   const cols = visibleCols();
   const di = cols.indexOf(ci);
-  if (di < 0) { toast('目标列已被隐藏, 无法跳转', 'warn'); return; }
+  if (di < 0) { toast(t('search_col_hidden'), 'warn'); return; }
   const pos = visRows.indexOf(ri);
-  if (pos < 0) { toast('目标行被筛选隐藏, 无法跳转', 'warn'); return; }
+  if (pos < 0) { toast(t('search_row_filtered'), 'warn'); return; }
   const fH = frozenHeight();
   let top = fH;
   for (let k = 0; k < pos; k++) top += rowH[visRows[k]];
@@ -1493,10 +1497,10 @@ function updateStatus() {
   const skip = v.titleRow != null ? 1 : 0;   // 标题行不计入行数
   const nSel = v.selRanges && v.selRanges.length ? selCellCount(v) : 0;
   $('#st-rows').textContent = curFile() && sh
-    ? `${sh.name}: ${visRows.length - skip} / ${sh.rows.length - skip} 行 · ${visibleCols().length} / ${sh.nCols} 列` : '';
-  $('#st-filter').textContent = nf ? `已筛选 ${nf} 列${nSel ? ' (范围: 选区)' : ''}` : '';
-  $('#st-sort').textContent = v.sorts && v.sorts.length ? `已排序 ${v.sorts.length} 级` : '';
-  $('#st-sel').textContent = nSel ? `选区 ${nSel} 格` : '';
+    ? t('st_rows', { name: sh.name, v: visRows.length - skip, tt: sh.rows.length - skip, vc: visibleCols().length, tc: sh.nCols }) : '';
+  $('#st-filter').textContent = nf ? (nSel ? t('st_filtered_sel', { n: nf }) : t('st_filtered', { n: nf })) : '';
+  $('#st-sort').textContent = v.sorts && v.sorts.length ? t('st_sorted', { n: v.sorts.length }) : '';
+  $('#st-sel').textContent = nSel ? t('st_sel', { n: nSel }) : '';
   renderChips();
 }
 function updateInputs() {
@@ -1518,7 +1522,7 @@ function updateInputs() {
 /* ================= 载入文件 / 多文件 tab ================= */
 function loadFileData(data) {
   if (!data || !data.ok) {
-    toast('打开失败: ' + ((data && data.error) || '未知错误'), 'err');
+    toast(t('open_failed', { e: (data && data.error) || t('unknown_error') }), 'err');
     return;
   }
   const exist = FILES.findIndex((f) => f.data.path === data.path);
@@ -1531,7 +1535,7 @@ function loadFileData(data) {
     FI = FILES.length - 1;
   }
   activateFile();
-  toast(`已载入 ${data.fileName}: ${data.sheets.length} 个工作表`, 'ok');
+  toast(t('loaded', { name: data.fileName, n: data.sheets.length }), 'ok');
 }
 
 function activateFile() {
@@ -1543,7 +1547,7 @@ function activateFile() {
   $('#welcome').classList.toggle('hidden', !!f);
   $('#btn-save').disabled = !f;
   if (f) {
-    $('#tb-file').textContent = f.data.fileName + (f.data.format === 'xls' ? '  (.xls → 写回将另存 .xlsx)' : '');
+    $('#tb-file').textContent = f.data.fileName + (f.data.format === 'xls' ? t('tb_file_xls') : '');
     renderAll();
     grid().scrollTop = 0;
     grid().scrollLeft = 0;
@@ -1563,7 +1567,7 @@ function closeFile(i) {
   if (FI > i) FI -= 1;
   if (FI >= FILES.length) FI = Math.max(0, FILES.length - 1);
   activateFile();
-  toast('已关闭 ' + name, 'ok');
+  toast(t('closed_file', { name }), 'ok');
 }
 
 function closeFileByPath(path) {
@@ -1584,7 +1588,7 @@ function renderFileTabs() {
     b.title = f.data.path;
     b.appendChild(el('span', 'ft-name', f.data.fileName));
     const x = el('span', 'ft-close', '✕');
-    x.title = '关闭此文件';
+    x.title = t('close_file_tip');
     x.onclick = (e) => { e.stopPropagation(); closeFileByPath(f.data.path); };
     b.appendChild(x);
     b.onclick = () => { if (FI !== i) { FI = i; activateFile(); } };
@@ -1613,9 +1617,9 @@ function startFileTabDrag(e, i) {
     if (!moved) return;
     const tabs = Array.from(document.querySelectorAll('#file-tabs .ftab'));
     let to = tabs.length - 1;
-    for (const t of tabs) {
-      const r = t.getBoundingClientRect();
-      if (ev.clientX < r.left + r.width / 2) { to = Number(t.dataset.fi); break; }
+    for (const tb of tabs) {
+      const r = tb.getBoundingClientRect();
+      if (ev.clientX < r.left + r.width / 2) { to = Number(tb.dataset.fi); break; }
     }
     if (to === i) return;
     const [item] = FILES.splice(i, 1);
@@ -1649,14 +1653,14 @@ function renderSheetTabs() {
 
 let fileOpening = false;
 async function openFile() {
-  if (!HAS_BRIDGE) { toast('当前为浏览器调试模式, 请点"载入示例数据"', 'warn'); return; }
+  if (!HAS_BRIDGE) { toast(t('browser_dev_hint'), 'warn'); return; }
   if (fileOpening) return;   // 防重入: 对话框期间忽略重复点击
   fileOpening = true;
-  toast('正在读取文件…');
+  toast(t('reading_file'));
   try {
-    const data = await callApi('pick_and_load');
+    const data = await callApi('pick_and_load', LANG);
     if (data && data.ok) loadFileData(data);
-    else if (data && data.error) toast('打开失败: ' + data.error, 'err');
+    else if (data && data.error) toast(t('open_failed', { e: data.error }), 'err');
   } finally { fileOpening = false; }
 }
 
@@ -1775,7 +1779,7 @@ document.addEventListener('mouseup', (e) => {
       v.lastW[ctx.ci] = Math.round(ctx.startW);
       const name = colName(ctx.ci);
       hideCols([ctx.ci]);
-      toast('已隐藏列 ' + name + ' · 在表头该位置的竖条处向右拖可拉回', 'warn');
+      toast(t('col_hidden_toast', { name }), 'warn');
       return;
     }
     v.colW[ctx.ci] = clamp(Math.round(ctx.curW), COLW_MIN, COLW_MAX);
@@ -1831,7 +1835,7 @@ function headerDragBlock(ci) {
   const first = cols.indexOf(picked[0]);
   const contiguous = picked.every((c, k) => cols.indexOf(c) === first + k);
   if (!contiguous) {
-    toast('多列拖拽仅支持连续选中的列, 本次只拖动当前列', 'warn');
+    toast(t('col_drag_noncontig'), 'warn');
     return [ci];
   }
   return picked;
@@ -1879,16 +1883,16 @@ function showMenu(e, items) {
 }
 
 function alignSubMenu(setFn) {
-  return { label: '对齐', inline: [
-    { icon: '⇤', title: '左对齐', fn: () => setFn('left') },
-    { icon: '≡', title: '居中', fn: () => setFn('center') },
-    { icon: '⇥', title: '右对齐', fn: () => setFn('right') },
-    { icon: '↺', title: '恢复默认', fn: () => setFn(null) },
+  return { label: t('m_align'), inline: [
+    { icon: '⇤', title: t('al_left'), fn: () => setFn('left') },
+    { icon: '≡', title: t('al_center'), fn: () => setFn('center') },
+    { icon: '⇥', title: t('al_right'), fn: () => setFn('right') },
+    { icon: '↺', title: t('al_reset'), fn: () => setFn(null) },
   ] };
 }
 
 function promptPx(title, cur) {
-  const s = prompt(title + ' (像素)', cur);
+  const s = prompt(title + t('prompt_px'), cur);
   if (s === null) return null;
   const n = parseInt(s, 10);
   return Number.isFinite(n) && n > 0 ? n : null;
@@ -1915,14 +1919,14 @@ function openCtxMenu(e, ci) {
   const cols = visibleCols();
   const di = cols.indexOf(ci);
   const items = [
-    { label: '筛选此列 (同双击)', fn: () => openFilterPanel(ci) },
+    { label: t('m_filter_col'), fn: () => openFilterPanel(ci) },
   ];
   if (di >= 0 && di < v.freezeCol) {
-    items.push({ label: '将此列移出冻结区(归位)', fn: () => moveColOutOfFrozen(ci) });
-    items.push({ label: '取消全部冻结列(归位)', fn: unfreezeColsAll });
+    items.push({ label: t('m_col_unfreeze'), fn: () => moveColOutOfFrozen(ci) });
+    items.push({ label: t('m_cols_unfreeze_all'), fn: unfreezeColsAll });
   } else {
-    items.push({ label: '冻结到此列(前 ' + (di + 1) + ' 列)', fn: () => { v.freezeCol = di + 1; renderAll(); } });
-    if (v.freezeCol > 0) items.push({ label: '将此列加入冻结区', fn: () => {
+    items.push({ label: t('m_freeze_to_col', { n: di + 1 }), fn: () => { v.freezeCol = di + 1; renderAll(); } });
+    if (v.freezeCol > 0) items.push({ label: t('m_col_freeze_add'), fn: () => {
       const visible = v.order.filter((c) => !v.hiddenSet.has(c));
       const frozen = visible.slice(0, v.freezeCol);
       const rest = visible.slice(v.freezeCol).filter((c) => c !== ci);
@@ -1934,22 +1938,22 @@ function openCtxMenu(e, ci) {
   }
   items.push(alignSubMenu((mode) => { setAlign(ci, mode); }));
   items.push('-');
-  items.push({ label: '按此列 升序', fn: () => applySorts([{ col: ci, dir: 'asc' }]) });
-  items.push({ label: '按此列 降序', fn: () => applySorts([{ col: ci, dir: 'desc' }]) });
+  items.push({ label: t('m_sort_by_asc'), fn: () => applySorts([{ col: ci, dir: 'asc' }]) });
+  items.push({ label: t('m_sort_by_desc'), fn: () => applySorts([{ col: ci, dir: 'desc' }]) });
   if (v.sorts && v.sorts.length) {
-    items.push({ label: '清除排序(恢复排序前行序)', fn: () => { applySorts([]); toast('已清除排序', 'ok'); } });
+    items.push({ label: t('m_clear_sort'), fn: () => { applySorts([]); toast(t('sort_cleared'), 'ok'); } });
   }
-  items.push({ label: '多条件排序…', fn: openSortModal });
+  items.push({ label: t('m_multi_sort'), fn: openSortModal });
   items.push('-');
-  items.push({ label: '设置列宽 (px)…', fn: () => {
-    const n = promptPx('列宽', Math.round(colWidth(ci)));
+  items.push({ label: t('m_col_width'), fn: () => {
+    const n = promptPx(t('prompt_col_width'), Math.round(colWidth(ci)));
     if (n) { v.colW[ci] = clamp(n, COLW_MIN, COLW_MAX); resetHeights(v); renderAll(); }
   } });
   items.push('-');
-  items.push({ label: '隐藏此列', cls: 'danger', fn: () => { hideCols([ci]); } });
-  items.push({ label: '自动调整此列宽', fn: () => { v.colW[ci] = autoColWidth(ci); resetHeights(v); renderAll(); } });
+  items.push({ label: t('m_hide_col'), cls: 'danger', fn: () => { hideCols([ci]); } });
+  items.push({ label: t('m_autofit_col'), fn: () => { v.colW[ci] = autoColWidth(ci); resetHeights(v); renderAll(); } });
   items.push('-');
-  items.push({ label: '列设置…', fn: () => openColsPanel() });
+  items.push({ label: t('m_cols_panel'), fn: () => openColsPanel() });
   showMenu(e, items);
 }
 
@@ -1959,9 +1963,9 @@ function unsetTitleRowInner() {
   // 标题行当初若从冻结区"转入"标题(took, 设计时做过 freezeRow-1), 按原行号序插回
   // 冻结集合, 否则插回正文原号位
   const v = view();
-  const t = v.titleRow;
+  const tr = v.titleRow;
   const seq = rowSeq();
-  const frozen = seq.slice(0, frozenRows(v)).filter((ri) => ri !== t);   // 冻结集合(去标题, 保持显示序)
+  const frozen = seq.slice(0, frozenRows(v)).filter((ri) => ri !== tr);   // 冻结集合(去标题, 保持显示序)
   const rest = seq.slice(frozenRows(v));                                  // 正文(保持现序=排序物化不被清)
   const took = !!(v.titlePre && v.titlePre.took);
   v.titleRow = null;
@@ -1975,12 +1979,12 @@ function unsetTitleRowInner() {
     // 当初从冻结区转入 且 常规冻结仍在: 按原行号序插回冻结集合;
     // 若常规冻结已被"取消冻结行(全部归位)"清空, 冻结来源已消亡——直接走归位分支,
     // 否则取消标题会把行重新冻结在顶部且后续取消冻结也不归位(第十二批反馈2)
-    frozen.push(t);
+    frozen.push(tr);
     frozen.sort((a, b) => a - b);   // 冻结区是连续前缀, 原号序即原相对位置
   } else {
-    let at = rest.findIndex((x) => x > t);
+    let at = rest.findIndex((x) => x > tr);
     if (at < 0) at = rest.length;
-    rest.splice(at, 0, t);
+    rest.splice(at, 0, tr);
   }
   v.freezeRow = frozen.length;
   v.rowOrder = frozen.concat(rest);
@@ -2002,13 +2006,13 @@ function setTitleRow(ri) {
   setSelCell(null);
   dirtyHeights = true;
   renderAll();
-  toast('已设为标题行: 置顶冻结、不计行号(右键该行行号可取消)', 'ok');
+  toast(t('title_row_set'), 'ok');
 }
 function unsetTitleRow() {
   unsetTitleRowInner();
   dirtyHeights = true;
   renderAll();
-  toast('已取消标题行, 恢复原位置与行号', 'ok');
+  toast(t('title_row_unset'), 'ok');
 }
 
 // 把"加入冻结区"时物化前置的行/列放回原号序位置(第十一批反馈3: 取消冻结要归位,
@@ -2023,17 +2027,17 @@ function insertByOrig(list, item) {
 function unfreezeRowsAll() {
   const v = view();
   const seq = rowSeq();
-  const t = v.titleRow;
+  const tr = v.titleRow;
   const moved = v.frozenMoved || new Set();
   const stayers = [], movers = [];
   for (const ri of seq.slice(0, frozenRows(v))) {
-    if (ri === t) continue;                 // 标题行不物化, 保持置顶
+    if (ri === tr) continue;                 // 标题行不物化, 保持置顶
     (moved.has(ri) ? movers : stayers).push(ri);
   }
   const rest = seq.slice(frozenRows(v));
   movers.sort((a, b) => a - b);
   for (const ri of movers) insertByOrig(rest, ri);
-  v.rowOrder = (t != null ? [t] : []).concat(stayers).concat(rest);   // rowOrder 须含全部行
+  v.rowOrder = (tr != null ? [tr] : []).concat(stayers).concat(rest);   // rowOrder 须含全部行
   v.freezeRow = 0;
   v.frozenMoved = new Set();
   dirtyHeights = true;
@@ -2046,11 +2050,11 @@ function moveRowOutOfFrozen(ri) {
   if (pos < 0 || pos >= frozenRows(v) || ri === v.titleRow) return;
   seq.splice(pos, 1);
   const nf = frozenRows(v) - 1;                 // 取出后冻结前缀长度
-  const t = v.titleRow;
-  const frozen = seq.slice(0, nf).filter((x) => x !== t);
-  const rest = seq.slice(nf).filter((x) => x !== t);
+  const tr = v.titleRow;
+  const frozen = seq.slice(0, nf).filter((x) => x !== tr);
+  const rest = seq.slice(nf).filter((x) => x !== tr);
   insertByOrig(rest, ri);
-  v.rowOrder = (t != null ? [t] : []).concat(frozen).concat(rest);   // rowOrder 须含全部行(含标题行本体)
+  v.rowOrder = (tr != null ? [tr] : []).concat(frozen).concat(rest);   // rowOrder 须含全部行(含标题行本体)
   v.freezeRow = Math.max(0, v.freezeRow - 1);
   if (v.frozenMoved) v.frozenMoved.delete(ri);
   dirtyHeights = true;
@@ -2093,14 +2097,14 @@ function openRowMenu(e, ri) {
   const seq = rowSeq();
   const pos = seq.indexOf(ri);
   if (v.titleRow != null && ri === v.titleRow) {
-    items.push({ label: '取消标题行(恢复原位置)', fn: unsetTitleRow });
+    items.push({ label: t('m_unset_title'), fn: unsetTitleRow });
   } else {
-    items.push({ label: '设为标题行(置顶冻结, 不计行号)', fn: () => setTitleRow(ri) });
+    items.push({ label: t('m_set_title'), fn: () => setTitleRow(ri) });
     items.push('-');
   }
   if (pos >= frozenRows(v)) {
-    items.push({ label: '冻结到此行(连续前缀)', fn: () => { v.freezeRow = v.titleRow != null ? pos : pos + 1; dirtyHeights = true; renderAll(); } });
-    items.push({ label: '将此行加入冻结区(移动到冻结区末尾)', fn: () => {
+    items.push({ label: t('m_freeze_to_row'), fn: () => { v.freezeRow = v.titleRow != null ? pos : pos + 1; dirtyHeights = true; renderAll(); } });
+    items.push({ label: t('m_row_freeze_add'), fn: () => {
       if (pos < 0) return;
       seq.splice(pos, 1);
       seq.splice(frozenRows(v), 0, ri);
@@ -2112,15 +2116,15 @@ function openRowMenu(e, ri) {
       renderAll();
     } });
   } else if (ri !== v.titleRow) {
-    items.push({ label: '将此行移出冻结区(归位)', fn: () => moveRowOutOfFrozen(ri) });
+    items.push({ label: t('m_row_unfreeze'), fn: () => moveRowOutOfFrozen(ri) });
   }
-  if (v.freezeRow > 0) items.push({ label: '取消冻结行(全部归位)', fn: unfreezeRowsAll });
+  if (v.freezeRow > 0) items.push({ label: t('m_rows_unfreeze_all'), fn: unfreezeRowsAll });
   items.push(alignSubMenu((mode) => {
     if (mode) v.rowAlign[ri] = mode; else delete v.rowAlign[ri];
     renderAll();
   }));
-  items.push({ label: '设置行高 (px)…', fn: () => {
-    const n = promptPx('行高', Math.round(rowH[ri] || 30));
+  items.push({ label: t('m_row_height'), fn: () => {
+    const n = promptPx(t('prompt_row_height'), Math.round(rowH[ri] || 30));
     if (n) { v.rowH[ri] = clamp(n, ROWH_MIN, ROWH_MAX); dirtyHeights = true; renderAll(); }
   } });
   showMenu(e, items);
@@ -2144,13 +2148,14 @@ function hideCols(list) {
 }
 
 /* ================= 筛选面板 ================= */
+// 操作符下拉: [op, 字典键], 渲染时 t() 取词
 const OPS = [
-  { g: '文本', items: [
-    ['contains', '包含'], ['not_contains', '不包含'], ['equals', '完全匹配'], ['not_equals', '不等于'],
-    ['starts', '开头为'], ['ends', '结尾为'], ['empty', '为空'], ['not_empty', '不为空'],
+  { g: 'op_group_text', items: [
+    ['contains', 'op_contains'], ['not_contains', 'op_not_contains'], ['equals', 'op_equals'], ['not_equals', 'op_not_equals'],
+    ['starts', 'op_starts'], ['ends', 'op_ends'], ['empty', 'op_empty'], ['not_empty', 'op_not_empty'],
   ] },
-  { g: '数值', items: [
-    ['gt', '大于 >'], ['lt', '小于 <'], ['gte', '大于等于 ≥'], ['lte', '小于等于 ≤'], ['eq', '等于 ＝'], ['ne', '不等于 ≠'],
+  { g: 'op_group_num', items: [
+    ['gt', 'op_gt'], ['lt', 'op_lt'], ['gte', 'op_gte'], ['lte', 'op_lte'], ['eq', 'op_eq'], ['ne', 'op_ne'],
   ] },
 ];
 
@@ -2163,7 +2168,7 @@ function openFilterPanel(ci) {
   p.textContent = '';
 
   // 标题: 一行描述文本(不再提供列切换下拉 —— 多列筛选请用工具栏"筛选"模态框)
-  const title = el('div', 'fp-title', '筛选条件: ');
+  const title = el('div', 'fp-title', t('fp_title'));
   const nameSpan = el('span', 'fp-colname', colName(ci));
   nameSpan.title = colName(ci);
   title.appendChild(nameSpan);
@@ -2183,10 +2188,10 @@ function openFilterPanel(ci) {
       const sel = document.createElement('select');
       OPS.forEach((g) => {
         const og = document.createElement('optgroup');
-        og.label = g.g;
-        g.items.forEach(([op, label]) => {
+        og.label = t(g.g);
+        g.items.forEach(([op, key]) => {
           const o = document.createElement('option');
-          o.value = op; o.textContent = label;
+          o.value = op; o.textContent = t(key);
           if (c.op === op) o.selected = true;
           og.appendChild(o);
         });
@@ -2194,22 +2199,22 @@ function openFilterPanel(ci) {
       });
       sel.onchange = () => { condList[i].op = sel.value; };
       const inp = document.createElement('input');
-      inp.placeholder = '值';
+      inp.placeholder = t('fp_val_ph');
       inp.value = c.val == null ? '' : c.val;
       inp.oninput = () => { condList[i].val = inp.value; };
       inp.onkeydown = (ev) => { if (ev.key === 'Enter') apply(); };
       const del = el('button', 'del', '✕');
-      del.title = '删除此条件';
+      del.title = t('fp_del_cond');
       del.onclick = () => { condList.splice(i, 1); renderConds(); };
       row.append(sel, inp, del);
       condBox.appendChild(row);
     });
-    const add = el('button', 'fp-add', '＋ 添加条件');
+    const add = el('button', 'fp-add', t('fp_add_cond'));
     add.onclick = () => { condList.push({ op: 'contains', val: '' }); renderConds(); condBox.lastChild.previousSibling; const inputs = condBox.querySelectorAll('input'); inputs[inputs.length - 1].focus(); };
     condBox.appendChild(add);
   }
   renderConds();
-  p.appendChild(el('div', 'fp-note', '多个条件为"与"关系: 后添加的条件作用于前面条件的结果集(取交集)。'));
+  p.appendChild(el('div', 'fp-note', t('fp_note')));
 
   // 颜色筛选
   const usedColors = new Map(); // hex -> count
@@ -2219,18 +2224,18 @@ function openFilterPanel(ci) {
     usedColors.set(key, (usedColors.get(key) || 0) + 1);
   }
   const colorsBox = el('div', 'fp-colors');
-  colorsBox.appendChild(el('div', 'lbl', '按单元格颜色筛选 (多选, 与上述条件取交集)'));
+  colorsBox.appendChild(el('div', 'lbl', t('fp_color_lbl')));
   const swBox = el('div', 'fp-swatches');
   const selColors = new Set(cur.colors || []);
   for (const [hex] of usedColors) {
     const sw = el('div', 'fp-sw' + (hex === 'none' ? ' none' : '') + (selColors.has(hex) ? ' sel' : ''));
     if (hex !== 'none') sw.style.background = hex;
-    sw.title = hex === 'none' ? '无填充' : hex;
+    sw.title = hex === 'none' ? t('fp_no_fill') : hex;
     sw.onclick = () => { sw.classList.toggle('sel'); sw.classList.contains('sel') ? selColors.add(hex) : selColors.delete(hex); };
     swBox.appendChild(sw);
   }
   colorsBox.appendChild(swBox);
-  if (usedColors.size <= 1) colorsBox.appendChild(el('div', 'lbl', '(此列没有填充色)')).style.marginTop = '4px';
+  if (usedColors.size <= 1) colorsBox.appendChild(el('div', 'lbl', t('fp_no_colors'))).style.marginTop = '4px';
   p.appendChild(colorsBox);
 
   // ---- 按值分类筛选(Excel/WPS 默认筛选风格) ----
@@ -2246,11 +2251,11 @@ function openFilterPanel(ci) {
   allVals.sort((a, b) => valCount.get(b) - valCount.get(a));
   const excluded = new Set(curVals ? allVals.filter((s) => !curVals.includes(s)) : []);
   const valsHead = el('div', 'lbl');
-  const valsTitle = el('span', '', `按值筛选 (${allVals.length} 类)`);
+  const valsTitle = el('span', '', t('fp_by_value', { n: allVals.length }));
   const search = document.createElement('input');
-  search.placeholder = '搜索值…';
-  const selAll = el('button', 'mini', '全选');
-  const selNone = el('button', 'mini', '全不选');
+  search.placeholder = t('fp_search_ph');
+  const selAll = el('button', 'mini', t('fp_sel_all'));
+  const selNone = el('button', 'mini', t('fp_sel_none'));
   valsHead.append(valsTitle, search, selAll, selNone);
   valsBox.appendChild(valsHead);
   const vlist = el('div', 'fp-vlist');
@@ -2267,12 +2272,12 @@ function openFilterPanel(ci) {
       cb.type = 'checkbox';
       cb.checked = !excluded.has(s);
       cb.onchange = () => { cb.checked ? excluded.delete(s) : excluded.add(s); };
-      const valEl = el('span', 'fv-val', s === '' ? '(空)' : s);
+      const valEl = el('span', 'fv-val', s === '' ? t('fp_empty_val') : s);
       valEl.title = s;
       rowEl.append(cb, valEl, el('span', 'fv-count', String(valCount.get(s))));
       vlist.appendChild(rowEl);
     }
-    if (!vlist.children.length) vlist.appendChild(el('div', 'fv-row', '(无匹配值)'));
+    if (!vlist.children.length) vlist.appendChild(el('div', 'fv-row', t('fp_no_match_val')));
   }
   search.oninput = renderVals;
   selAll.onclick = () => { excluded.clear(); renderVals(); };
@@ -2282,11 +2287,11 @@ function openFilterPanel(ci) {
 
   // 按钮
   const btns = el('div', 'fp-btns');
-  const clearBtn = el('button', 'tbtn fp-clear-left', '清除本列');
+  const clearBtn = el('button', 'tbtn fp-clear-left', t('fp_clear_col'));
   clearBtn.onclick = () => { delete v.filters[ci]; closePopups(); renderAll(); };
-  const cancel = el('button', 'tbtn', '取消');
+  const cancel = el('button', 'tbtn', t('btn_cancel'));
   cancel.onclick = closePopups;
-  const ok = el('button', 'tbtn primary', '应用');
+  const ok = el('button', 'tbtn primary', t('filter_apply_short'));
   ok.onclick = apply;
   function apply() {
     const clean = condList.filter((c) => c.val !== '' || c.op === 'empty' || c.op === 'not_empty');
@@ -2315,24 +2320,24 @@ function openFilterPanel(ci) {
   p.style.top = y + 'px';
 
   if (!(ci in v.numCols)) v.numCols[ci] = colIsNumeric(ci);
-  numTag.textContent = v.numCols[ci] ? '数值列' : '文本列';
+  numTag.textContent = v.numCols[ci] ? t('col_is_num') : t('col_is_txt');
 }
 
 /* ================= 多条件筛选模态框(工具栏"筛选"按钮) ================= */
 function openFilterModal() {
-  if (!FILES.length) { toast('先打开一个文件再筛选', 'warn'); return; }
+  if (!FILES.length) { toast(t('filter_need_file'), 'warn'); return; }
   const v = view();
   const cols = visibleCols();
-  if (!cols.length) { toast('没有可筛选的列', 'warn'); return; }
+  if (!cols.length) { toast(t('filter_no_cols'), 'warn'); return; }
   const mask = $('#modal-mask'), m = $('#modal');
   m.textContent = '';
   m.classList.remove('cell-modal', 'search-modal');
   m.classList.add('fm-modal');
-  m.appendChild(el('h3', '', '多条件筛选'));
+  m.appendChild(el('h3', '', t('filter_modal_title')));
   const selRowsSet = new Set();
   (v.selRanges || []).forEach((rg) => { for (let r = rg.r1; r <= rg.r2; r++) selRowsSet.add(r); });
-  const selRowsTxt = selRowsSet.size ? ` · 当前有选区: 仅作用于选中的 ${selRowsSet.size} 行(取消选区恢复全表)` : '';
-  m.appendChild(el('div', 'fm-sub', `当前工作表: ${sheet().name} · 各条件之间为"与"关系(需同时满足)${selRowsTxt}`));
+  const selRowsTxt = selRowsSet.size ? t('filter_sel_scope', { n: selRowsSet.size }) : '';
+  m.appendChild(el('div', 'fm-sub', t('filter_modal_sub', { name: sheet().name, sel: selRowsTxt })));
   // 载入现有条件: 把各列的 conds 摊平成行(colors/values 类筛选保留不动, 仅在此编辑条件)
   const list = [];
   for (const [k, f] of Object.entries(v.filters)) {
@@ -2360,10 +2365,10 @@ function openFilterModal() {
       sel.className = 'fm-op';
       OPS.forEach((g) => {
         const og = document.createElement('optgroup');
-        og.label = g.g;
-        g.items.forEach(([op, label]) => {
+        og.label = t(g.g);
+        g.items.forEach(([op, key]) => {
           const o = document.createElement('option');
-          o.value = op; o.textContent = label;
+          o.value = op; o.textContent = t(key);
           if (r.op === op) o.selected = true;
           og.appendChild(o);
         });
@@ -2371,39 +2376,39 @@ function openFilterModal() {
       });
       sel.onchange = () => { list[i].op = sel.value; };
       const inp = document.createElement('input');
-      inp.placeholder = '值';
+      inp.placeholder = t('fp_val_ph');
       inp.value = r.val;
       inp.oninput = () => { list[i].val = inp.value; };
       inp.onkeydown = (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); applyBtn.click(); } };
       const tag = el('span', 'fm-tag', '');
       function refreshTag() {
         if (!(r.col in v.numCols)) v.numCols[r.col] = colIsNumeric(r.col);
-        tag.textContent = v.numCols[r.col] ? '数值列' : '文本列';
+        tag.textContent = v.numCols[r.col] ? t('col_is_num') : t('col_is_txt');
       }
       refreshTag();
       const del = el('button', 'del', '✕');
-      del.title = '删除此条件';
+      del.title = t('fp_del_cond');
       del.onclick = () => { list.splice(i, 1); renderRows(); };
       row.append(colSel, sel, inp, tag, del);
       listBox.appendChild(row);
     });
-    const add = el('button', 'fm-add', '＋ 添加条件');
+    const add = el('button', 'fm-add', t('fp_add_cond'));
     add.onclick = () => { list.push({ col: cols[0], op: 'contains', val: '' }); renderRows(); const inputs = listBox.querySelectorAll('input'); inputs[inputs.length - 1].focus(); };
     listBox.appendChild(add);
   }
   renderRows();
-  m.appendChild(el('div', 'fm-note', '单元格颜色 / 值分类筛选请在双击列头的面板中设置。选择筛选列不会跳转视图。'));
+  m.appendChild(el('div', 'fm-note', t('filter_modal_note')));
   const btns = el('div', 'm-btns');
-  const clearBtn = el('button', 'tbtn danger-btn m-clear', '清除全部筛选');
+  const clearBtn = el('button', 'tbtn danger-btn m-clear', t('filter_clear_all'));
   clearBtn.onclick = () => {
     v.filters = {};
     mask.classList.remove('open');
     renderAll();
-    toast('已清除全部筛选', 'ok');
+    toast(t('filter_cleared_all'), 'ok');
   };
-  const cancel = el('button', 'tbtn', '取消');
+  const cancel = el('button', 'tbtn', t('btn_cancel'));
   cancel.onclick = () => mask.classList.remove('open');
-  const applyBtn = el('button', 'tbtn primary', '应用筛选');
+  const applyBtn = el('button', 'tbtn primary', t('filter_apply'));
   applyBtn.onclick = () => {
     // 按列分组重建各列 conds; 保留列头面板设置的 colors/values 不动
     const byCol = {};
@@ -2438,11 +2443,11 @@ function openColsPanel() {
   const sh = sheet(), v = view();
   p.textContent = '';
   const head = el('div', 'cp-head');
-  head.appendChild(el('span', '', '列显示与顺序 (从上到下 = 从左到右)'));
+  head.appendChild(el('span', '', t('cp_title')));
   const sp = el('div', 'spacer');
-  const showAll = el('button', 'tbtn', '全部显示');
+  const showAll = el('button', 'tbtn', t('cp_show_all'));
   showAll.onclick = () => { v.hiddenSet.clear(); resetHeights(v); renderAll(); openColsPanel(); };
-  const autoAll = el('button', 'tbtn', '自动列宽');
+  const autoAll = el('button', 'tbtn', t('cp_auto_width'));
   autoAll.onclick = () => { v.colW = {}; resetHeights(v); renderAll(); };
   head.append(sp, autoAll, showAll);
   p.appendChild(head);
@@ -2469,18 +2474,18 @@ function openColsPanel() {
       const name = el('span', 'cp-name', colName(ci));
       const alignSel = document.createElement('select');
       alignSel.className = 'cp-align';
-      [['', '对齐'], ['left', '左'], ['center', '中'], ['right', '右']].forEach(([val, label]) => {
+      [['', 'cp_align'], ['left', 'cp_left'], ['center', 'cp_center'], ['right', 'cp_right']].forEach(([val, key]) => {
         const o = document.createElement('option');
-        o.value = val; o.textContent = label;
+        o.value = val; o.textContent = t(key);
         if ((v.align[ci] || '') === val) o.selected = true;
         alignSel.appendChild(o);
       });
       alignSel.onchange = () => setAlign(ci, alignSel.value || null);
       const mv = el('div', 'cp-move');
-      const up = el('button', '', '↑'); up.title = '前移';
-      up.onclick = () => { if (pos > 0) { const t = v.order[pos - 1]; v.order[pos - 1] = v.order[pos]; v.order[pos] = t; resetHeights(v); renderAll(); render(); } };
-      const dn = el('button', '', '↓'); dn.title = '后移';
-      dn.onclick = () => { if (pos < v.order.length - 1) { const t = v.order[pos + 1]; v.order[pos + 1] = v.order[pos]; v.order[pos] = t; resetHeights(v); renderAll(); render(); } };
+      const up = el('button', '', '↑'); up.title = t('cp_up');
+      up.onclick = () => { if (pos > 0) { const swp = v.order[pos - 1]; v.order[pos - 1] = v.order[pos]; v.order[pos] = swp; resetHeights(v); renderAll(); render(); } };
+      const dn = el('button', '', '↓'); dn.title = t('cp_dn');
+      dn.onclick = () => { if (pos < v.order.length - 1) { const swp = v.order[pos + 1]; v.order[pos + 1] = v.order[pos]; v.order[pos] = swp; resetHeights(v); renderAll(); render(); } };
       mv.append(up, dn);
       row.append(cb, name, alignSel, mv);
       list.appendChild(row);
@@ -2539,9 +2544,9 @@ async function saveBack() {
   const p = buildPayload();
   const isXls = fd.format === 'xls';
   const msg = isXls
-    ? `原文件为 .xls 格式(只读保留不动)。\n视图将写入新文件:\n${fd.path.replace(/\.xls$/i, '')}.xlsx`
-    : `将把当前视图状态写入原文件:\n${fd.path}\n\n写入内容: 列顺序 / 隐藏列 / 冻结 ${view().freezeRow} 行 ${view().freezeCol} 列 / 筛选条件 / 列宽 / 自动换行\n写入前会自动备份为 .bak 文件。`;
-  showConfirm('应用视图到文件', msg, async () => {
+    ? t('save_msg_xls', { f: fd.path.replace(/\.xls$/i, '') + '.xlsx' })
+    : t('save_msg', { f: fd.path, r: view().freezeRow, c: view().freezeCol });
+  showConfirm(t('save_title'), msg, async () => {
     let res = await callApi('save_back', JSON.stringify(p));
     if (res === null && location.origin.startsWith('http')) {
       // dev 模式走 http
@@ -2549,12 +2554,13 @@ async function saveBack() {
       res = await r.json();
     }
     if (res && res.ok) {
-      let m = '已写入: ' + res.savedTo;
-      if (res.backup) m += '\n备份: ' + res.backup;
-      if (res.notes && res.notes.length) m += '\n' + res.notes.join('\n');
+      let m = t('save_ok', { f: res.savedTo });
+      if (res.backup) m += t('save_backup', { f: res.backup });
+      // notes 为后端稳定码(note:xxx 是字典键, t() 未知串原样透传)
+      if (res.notes && res.notes.length) m += '\n' + res.notes.map((s) => t(s)).join('\n');
       toast(m, 'ok');
     } else {
-      toast('写入失败: ' + ((res && res.error) || '未知错误'), 'err');
+      toast(t('save_failed', { e: (res && res.error) || t('unknown_error') }), 'err');
     }
   });
 }
@@ -2566,9 +2572,9 @@ function showConfirm(title, body, onOk, okLabel) {
   m.appendChild(el('h3', '', title));
   m.appendChild(el('div', 'm-body', body));
   const btns = el('div', 'm-btns');
-  const cancel = el('button', 'tbtn', '取消');
+  const cancel = el('button', 'tbtn', t('btn_cancel'));
   cancel.onclick = () => mask.classList.remove('open');
-  const ok = el('button', 'tbtn danger-btn', okLabel || '确认写入');
+  const ok = el('button', 'tbtn danger-btn', okLabel || t('save_confirm'));
   ok.onclick = () => { mask.classList.remove('open'); onOk(); };
   btns.append(cancel, ok);
   m.appendChild(btns);
@@ -2693,14 +2699,14 @@ function bindUI() {
     if (!v) return;
     if (v.selRanges && v.selRanges.length && isSingleColSel(v) === null) {
       // 防御: 正常情况按钮已 disabled; 非预期触发时给出与排序入口一致的提示
-      toast('多选状态下已禁用排序: 请先取消选区(点击空白处或 Esc)', 'warn');
+      toast(t('sort_disabled_multisel'), 'warn');
       return;
     }
     showMenu(e, [
-      { label: '升序', fn: () => quickSort('asc') },
-      { label: '降序', fn: () => quickSort('desc') },
+      { label: t('sort_menu_asc'), fn: () => quickSort('asc') },
+      { label: t('sort_menu_desc'), fn: () => quickSort('desc') },
       '-',
-      { label: '自定义排序…', fn: openSortModal },
+      { label: t('sort_menu_custom'), fn: openSortModal },
     ]);
   };
   $('#btn-mock').onclick = async () => {
@@ -2708,7 +2714,7 @@ function bindUI() {
       const m = location.search.match(/file=([^&]+)/);
       const r = await fetch(m ? '/api/mock?file=' + m[1] : '/api/mock');
       loadFileData(await r.json());
-    } catch (err) { toast('示例数据加载失败: ' + err, 'err'); }
+    } catch (err) { toast(t('mock_failed', { e: err }), 'err'); }
   };
   $('#in-frz-row').oninput = () => {
     const v = view();
@@ -2727,8 +2733,9 @@ function bindUI() {
   // 窗体控制
   $('#btn-min').onclick = () => callApi('win_minimize');
   $('#btn-close').onclick = () => callApi('win_close');
-  // 主题
+  // 主题 / 语言
   $('#btn-theme').onclick = toggleTheme;
+  $('#btn-lang').onclick = toggleLang;
   // 双击标题栏: 最大化/还原
   document.querySelector('.tb-drag').addEventListener('dblclick', () => toggleMaxWindow());
   const btnMax = $('#btn-max');
@@ -2742,16 +2749,16 @@ function bindUI() {
   // 筛选面板单独处理 —— 仅当点击"功能按钮/单元格(选中)"时关闭,
   // 正常单击或拖动主窗体空白(含标题栏拖动窗口位置)保持显示
   document.addEventListener('mousedown', (e) => {
-    const t = e.target;
-    if (t.closest('.popup') || t.closest('#btn-columns')) return;
+    const tgt = e.target;
+    if (tgt.closest('.popup') || tgt.closest('#btn-columns')) return;
     document.querySelectorAll('.popup.open').forEach((p) => {
       if (p.id !== 'filter-panel') p.classList.remove('open');
     });
     const fp = $('#filter-panel');
     if (!fp.classList.contains('open')) return;
-    const onCtl = t.closest('#toolbar') || t.closest('.titlebar-btns') || t.closest('#sheet-tabs')
-      || t.closest('#file-tabs') || t.closest('#filter-bar');
-    const onCell = t.closest('.vrow .cell');
+    const onCtl = tgt.closest('#toolbar') || tgt.closest('.titlebar-btns') || tgt.closest('#sheet-tabs')
+      || tgt.closest('#file-tabs') || tgt.closest('#filter-bar');
+    const onCell = tgt.closest('.vrow .cell');
     if (onCtl || onCell) fp.classList.remove('open');
   });
   // 表头行未冻结时(freezeRow=0): 首行在 body 中渲染, 表头交互走一次性委托
@@ -2774,7 +2781,7 @@ function bindUI() {
     const cell = e.target.closest('.vrow[data-ri="0"] .cell:not(.rownum)');
     if (!cell) return;
     e.preventDefault();
-    openCtxMenu(visibleCols()[Number(cell.dataset.di)]);
+    openCtxMenu(e, visibleCols()[Number(cell.dataset.di)]);
   });
   grid().addEventListener('scroll', () => {
     const g = grid();
@@ -2854,8 +2861,8 @@ function bindUI() {
   }, true);
   // Ctrl+C 复制选中内容: 走原生 copy 事件写 clipboardData(输入框聚焦/文本划选时放行原生行为)
   document.addEventListener('copy', (e) => {
-    const t = e.target;
-    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    const tgt = e.target;
+    if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable)) return;
     const v = view();
     if (!v || (!v.selCell && !(v.selRanges && v.selRanges.length))) return;
     const sel = window.getSelection();
@@ -2864,7 +2871,7 @@ function bindUI() {
     if (!cp) return;
     e.preventDefault();
     e.clipboardData.setData('text/plain', cp.text);
-    toast(`已复制 ${selCellCount(v)} 格 (${cp.rows} 行 × ${cp.cols} 列, Tab 分隔)`, 'ok');
+    toast(t('copied', { n: selCellCount(v), r: cp.rows, c: cp.cols }), 'ok');
   });
   // 点击遮罩空白处关闭模态窗
   $('#modal-mask').addEventListener('click', (e) => {
@@ -2906,10 +2913,10 @@ async function refreshMaxIcon() {
   if (!btn) return;
   if (st && st.maximized) {
     btn.innerHTML = SVG_RESTORE;
-    btn.title = '向下还原';
+    btn.title = t('tb_max_off');
   } else {
     btn.innerHTML = SVG_MAX;
-    btn.title = '最大化';
+    btn.title = t('tb_max_on');
   }
 }
 
@@ -2919,6 +2926,21 @@ function toggleTheme() {
   try { localStorage.setItem('xv-theme', cur); } catch (e) {}
 }
 
+/* ================= 语言切换 ================= */
+function refreshLangBtn() {
+  // 按钮显示"目标语言"名: 中文界面显示 EN, 英文界面显示 中
+  $('#btn-lang').textContent = LANG === 'zh' ? 'EN' : '中';
+}
+function toggleLang() {
+  setLang(LANG === 'zh' ? 'en' : 'zh');
+  refreshLangBtn();
+  refreshMaxIcon();
+  // 已渲染的动态文案(状态栏/标签卡/文件 tab/隐藏列提示等)随 activateFile 全量重建;
+  // 菜单/模态框在下次打开时以新语言构建
+  if (FILES.length) activateFile();
+  else updateStatus();
+}
+
 /* ================= 启动 ================= */
 (function boot() {
   let theme = 'dark';
@@ -2926,5 +2948,6 @@ function toggleTheme() {
   document.documentElement.setAttribute('data-theme', theme);
   bindUI();
   buildResizeHandles();
+  refreshLangBtn();
   $('#btn-save').disabled = true;
 })();

@@ -14,10 +14,11 @@
     <div class="brand"><span class="logo">▦</span><span class="brand-name">Cella</span></div>
     <div class="tb-drag pywebview-drag-region"><span id="tb-file" class="tb-file"></span></div>
     <div class="titlebar-btns">
-      <button id="btn-theme" title="切换 浅色/暗色 主题">◐</button>
-      <button id="btn-min"  title="最小化">─</button>
-      <button id="btn-max"  title="最大化 / 还原">▢</button>
-      <button id="btn-close" title="关闭">✕</button>
+      <button id="btn-lang" data-i18n-title="tb_lang" title="切换界面语言 / Switch language">EN</button>
+      <button id="btn-theme" data-i18n-title="tb_theme" title="切换 浅色/暗色 主题">◐</button>
+      <button id="btn-min"  data-i18n-title="tb_min" title="最小化">─</button>
+      <button id="btn-max"  data-i18n-title="tb_max" title="最大化 / 还原">▢</button>
+      <button id="btn-close" data-i18n-title="tb_close" title="关闭">✕</button>
     </div>
   </div>
 
@@ -26,15 +27,15 @@
 
   <!-- 工具栏 -->
   <div id="toolbar">
-    <button id="btn-open" class="tbtn">📂 打开文件</button>
-    <button id="btn-save" class="tbtn primary">💾 应用视图到文件</button>
+    <button id="btn-open" class="tbtn" data-i18n="btn_open">📂 打开文件</button>
+    <button id="btn-save" class="tbtn primary" data-i18n="btn_save">💾 应用视图到文件</button>
     <div id="sheet-tabs"></div>
     <div class="spacer"></div>
-    <label class="freeze-ctl" title="冻结前 N 行(表头行计入; 0=不冻结)">冻结行<input id="in-frz-row" type="number" min="0" step="1" value="0"></label>
-    <label class="freeze-ctl" title="冻结前 N 列">冻结列<input id="in-frz-col" type="number" min="0" step="1" value="0"></label>
-    <button id="btn-columns" class="tbtn">☰ 列设置</button>
-    <button id="btn-filters" class="tbtn" title="多条件筛选">▼ 筛选</button>
-    <button id="btn-sort" class="tbtn" title="多条件排序">⇅ 排序</button>
+    <label class="freeze-ctl" data-i18n-title="frz_rows_tip" title="冻结前 N 行(表头行计入; 0=不冻结)"><span data-i18n="frz_rows">冻结行</span><input id="in-frz-row" type="number" min="0" step="1" value="0"></label>
+    <label class="freeze-ctl" data-i18n-title="frz_cols_tip" title="冻结前 N 列"><span data-i18n="frz_cols">冻结列</span><input id="in-frz-col" type="number" min="0" step="1" value="0"></label>
+    <button id="btn-columns" class="tbtn" data-i18n="btn_columns">☰ 列设置</button>
+    <button id="btn-filters" class="tbtn" data-i18n="btn_filters" data-i18n-title="btn_filters_tip" title="多条件筛选">▼ 筛选</button>
+    <button id="btn-sort" class="tbtn" data-i18n="btn_sort" data-i18n-title="btn_sort_tip" title="多条件排序">⇅ 排序</button>
   </div>
 
   <!-- 已生效筛选标签卡 -->
@@ -47,9 +48,9 @@
       <div class="w-card">
         <div class="w-logo">▦</div>
         <h1>Cella</h1>
-        <p>支持 .xlsx / .xlsm / .xls · 冻结行列 · 拖动排序 · 显隐列 · 多条件筛选(含单元格颜色) · 视图写回</p>
-        <button id="btn-open-2" class="big">📂 打开 Excel 文件</button>
-        <button id="btn-mock" class="big ghost" style="display:none">载入示例数据 (test.xlsx)</button>
+        <p data-i18n="welcome_desc">支持 .xlsx / .xlsm / .xls · 冻结行列 · 拖动排序 · 显隐列 · 多条件筛选(含单元格颜色) · 视图写回</p>
+        <button id="btn-open-2" class="big" data-i18n="btn_open2">📂 打开 Excel 文件</button>
+        <button id="btn-mock" class="big ghost" style="display:none" data-i18n="btn_mock">载入示例数据 (test.xlsx)</button>
       </div>
     </div>
   </div>
@@ -61,7 +62,7 @@
     <span id="st-sort"></span>
     <span id="st-sel"></span>
     <span class="spacer"></span>
-    <span class="hint">双击列头筛选 · 右键列头/工具栏排序 · 双击列边/行边自适应 · Ctrl+F 搜索 · 单击选中单元格 · 双击超长格看全文</span>
+    <span class="hint" data-i18n="hint">双击列头筛选 · 右键列头/工具栏排序 · 双击列边/行边自适应 · Ctrl+F 搜索 · 单击选中单元格 · 双击超长格看全文</span>
   </div>
 </div>
 
@@ -72,6 +73,7 @@
 <div id="modal-mask"><div id="modal"></div></div>
 <div id="toasts"></div>
 
+<script src="lang.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

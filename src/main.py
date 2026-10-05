@@ -106,16 +106,21 @@ def build_api(window_ref):
                 pass
 
         # ---------- 文件 ----------
-        def pick_and_load(self):
+        def pick_and_load(self, lang='zh'):
             if not _dialog_lock.acquire(blocking=False):
                 return {'ok': False, 'cancel': True, 'busy': True}   # 已有对话框在弹, 忽略重复调用
             try:
-                return self._pick_and_load_inner()
+                return self._pick_and_load_inner(lang)
             finally:
                 _dialog_lock.release()
 
-        def _pick_and_load_inner(self):
-            r = _open_dialog_sta('Excel 文件 (*.xls;*.xlsx;*.xlsm)|*.xls;*.xlsx;*.xlsm|所有文件 (*.*)|*.*')
+        def _pick_and_load_inner(self, lang='zh'):
+            # 对话框过滤器文案随界面语言(前端传 LANG; 未知值回退中文)
+            filters = {
+                'en': 'Excel files (*.xls;*.xlsx;*.xlsm)|*.xls;*.xlsx;*.xlsm|All files (*.*)|*.*',
+                'zh': 'Excel 文件 (*.xls;*.xlsx;*.xlsm)|*.xls;*.xlsx;*.xlsm|所有文件 (*.*)|*.*',
+            }
+            r = _open_dialog_sta(filters.get(lang, filters['zh']))
             if r.get('error'):
                 return {'ok': False, 'error': r['error']}
             paths = r.get('paths') or []
@@ -445,7 +450,7 @@ def run_dev(port=8765):
                 length = int(self.headers.get('Content-Length') or 0)
                 payload = json.loads(self.rfile.read(length) or b'{}')
                 print('[dev] save_back payload:', json.dumps(payload, ensure_ascii=False)[:2000])
-                body = json.dumps({'ok': True, 'savedTo': '(dev 模式未真正写入)', 'notes': []},
+                body = json.dumps({'ok': True, 'savedTo': '(dev: not actually written)', 'notes': []},
                                   ensure_ascii=False).encode('utf-8')
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json; charset=utf-8')
