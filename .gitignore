@@ -14,6 +14,9 @@ build/
 # Internal dev notes (tracked by doc/'s own local git repo, never pushed)
 doc/
 
+# Agent working conventions (local only, not for the public repo)
+AGENTS.md
+
 # Dev & test leftovers
 .scratch/
 *.log
