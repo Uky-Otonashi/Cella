@@ -6,7 +6,7 @@ A tidy, fast desktop viewer for Excel spreadsheets — open a workbook, browse w
 
 The name comes from Latin *cella* ("small room") — the etymon of the spreadsheet *cell*.
 
-![main view](assets/shot-main.png)
+![main view](assets/shot-main.en.png)
 
 ## Features
 
@@ -22,7 +22,7 @@ The name comes from Latin *cella* ("small room") — the etymon of the spreadshe
 - **Dark / light themes**, **Chinese / English UI** with one-click switching (defaults to the system language; instant toggle from the title bar), virtualized rendering for large sheets
 - Native window resizing and dragging, DPI-friendly, centers on the current monitor
 
-![filtering](assets/shot-filter.png)
+![filtering](assets/shot-filter.en.png)
 
 ## Download & Run
 
@@ -41,7 +41,7 @@ Grab `Cella.exe` from the [Releases](https://github.com/Uky-Otonashi/Cella/relea
    - `.xls`: read-only; the view is saved into a new `.xlsx` beside it.
 5. `--selftest` command-line flag runs an internal bridge/window self-check (logs are written next to the exe).
 
-![light theme](assets/shot-light.png)
+![light theme](assets/shot-light.en.png)
 
 ## Project Structure
 
