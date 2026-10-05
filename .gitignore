@@ -10,6 +10,9 @@ dist/
 # Local tooling / editor
 .zcodeignore
 
+# Internal dev notes (tracked by doc/'s own local git repo, never pushed)
+doc/
+
 # Dev & test leftovers
 .scratch/
 *.log
