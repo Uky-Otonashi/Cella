@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cella</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- 标题栏: 左右两侧固定, 中间可拖动窗口 -->
+  <div id="titlebar">
+    <div class="brand"><span class="logo">▦</span><span class="brand-name">Cella</span></div>
+    <div class="tb-drag pywebview-drag-region"><span id="tb-file" class="tb-file"></span></div>
+    <div class="titlebar-btns">
+      <button id="btn-theme" title="切换 浅色/暗色 主题">◐</button>
+      <button id="btn-min"  title="最小化">─</button>
+      <button id="btn-max"  title="最大化 / 还原">▢</button>
+      <button id="btn-close" title="关闭">✕</button>
+    </div>
+  </div>
+
+  <!-- 文件 tab 条(多文件) -->
+  <div id="file-tabs"></div>
+
+  <!-- 工具栏 -->
+  <div id="toolbar">
+    <button id="btn-open" class="tbtn">📂 打开文件</button>
+    <button id="btn-save" class="tbtn primary">💾 应用视图到文件</button>
+    <div id="sheet-tabs"></div>
+    <div class="spacer"></div>
+    <label class="freeze-ctl" title="冻结前 N 行(表头行计入; 0=不冻结)">冻结行<input id="in-frz-row" type="number" min="0" step="1" value="0"></label>
+    <label class="freeze-ctl" title="冻结前 N 列">冻结列<input id="in-frz-col" type="number" min="0" step="1" value="0"></label>
+    <button id="btn-columns" class="tbtn">☰ 列设置</button>
+    <button id="btn-filters" class="tbtn" title="多条件筛选">▼ 筛选</button>
+    <button id="btn-sort" class="tbtn" title="多条件排序">⇅ 排序</button>
+  </div>
+
+  <!-- 已生效筛选标签卡 -->
+  <div id="filter-bar"></div>
+
+  <!-- 主区: 表格 / 欢迎页 -->
+  <div id="main">
+    <div id="grid"><div id="grid-inner"></div></div>
+    <div id="welcome">
+      <div class="w-card">
+        <div class="w-logo">▦</div>
+        <h1>Cella</h1>
+        <p>支持 .xlsx / .xlsm / .xls · 冻结行列 · 拖动排序 · 显隐列 · 多条件筛选(含单元格颜色) · 视图写回</p>
+        <button id="btn-open-2" class="big">📂 打开 Excel 文件</button>
+        <button id="btn-mock" class="big ghost" style="display:none">载入示例数据 (test.xlsx)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 状态栏 -->
+  <div id="statusbar">
+    <span id="st-rows"></span>
+    <span id="st-filter"></span>
+    <span id="st-sort"></span>
+    <span id="st-sel"></span>
+    <span class="spacer"></span>
+    <span class="hint">双击列头筛选 · 右键列头/工具栏排序 · 双击列边/行边自适应 · Ctrl+F 搜索 · 单击选中单元格 · 双击超长格看全文</span>
+  </div>
+</div>
+
+<!-- 浮层 -->
+<div id="ctx-menu" class="popup"></div>
+<div id="filter-panel" class="popup"></div>
+<div id="cols-panel" class="popup"></div>
+<div id="modal-mask"><div id="modal"></div></div>
+<div id="toasts"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

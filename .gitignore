@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+
+# Build outputs (binaries ship via GitHub Releases)
+src/build/
+src/dist/
+dist/
+
+# Local tooling / editor
+.zcodeignore
+
+# Dev & test leftovers
+.scratch/
+*.log
+selftest_*.txt
+test.xlsx
+demo.xlsx
